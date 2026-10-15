@@ -1,0 +1,15 @@
+{
+  "name": "plugin-package-inspector",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first preflight evidence for agent plugin packages",
+  "type": "module",
+  "scripts": {
+    "check": "node --check src/audit.mjs && node --check src/app.mjs && node --check src/cli.mjs && node --test",
+    "test": "node --test",
+    "audit:sample": "node src/cli.mjs fixtures/valid",
+    "serve": "node src/server.mjs"
+  },
+  "engines": {"node": ">=20"},
+  "license": "MIT"
+}

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Inspect an agent plugin package locally before directory submission.">
+  <title>Plugin Package Inspector</title>
+  <link rel="stylesheet" href="./src/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#workspace">Skip to inspector</a>
+  <header class="site-header">
+    <a class="brand" href="./" aria-label="Plugin Package Inspector home">
+      <span class="brand__mark" aria-hidden="true">PI</span>
+      <span>Plugin Package Inspector</span>
+    </a>
+    <button id="theme-toggle" class="quiet-button" type="button" aria-pressed="false" aria-label="Toggle color theme"><span>Light</span> theme</button>
+  </header>
+
+  <main id="workspace">
+    <section class="hero" aria-labelledby="hero-title">
+      <p class="eyebrow">Local-first release evidence</p>
+      <h1 id="hero-title">Find package blockers before a reviewer does.</h1>
+      <p class="hero__lede">Inspect manifest shape, portable skill paths, trust documents, common secret signatures, auth risk, and review-case evidence. Your files stay in this browser session.</p>
+      <div class="trust-strip" aria-label="Privacy properties">
+        <span>No upload</span><span>No account</span><span>No telemetry</span><span>Heuristics, not approval</span>
+      </div>
+    </section>
+
+    <section class="inspector" aria-labelledby="inspector-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">01 · Select</p><h2 id="inspector-title">Choose an extracted plugin folder</h2></div>
+        <p>ZIP inspection is intentionally not performed in the browser. Extract first so every visible file is auditable.</p>
+      </div>
+      <label id="dropzone" class="dropzone" for="folder-input" aria-busy="false">
+        <span class="dropzone__icon" aria-hidden="true">↗</span>
+        <strong>Choose folder</strong>
+        <span>Read an extracted package locally</span>
+        <small>Up to 2,000 files · 1 MB scanned per file</small>
+        <input id="folder-input" type="file" webkitdirectory multiple>
+      </label>
+    </section>
+
+    <section class="report" aria-labelledby="report-title">
+      <div class="section-heading report__heading">
+        <div><p class="eyebrow">02 · Review</p><h2 id="report-title">Preflight report</h2></div>
+        <div class="actions">
+          <button id="export-report" class="quiet-button" type="button" disabled>Export JSON</button>
+          <button id="clear-report" class="quiet-button" type="button" disabled>Clear</button>
+        </div>
+      </div>
+      <div id="summary" class="summary" role="status" aria-live="polite">No package inspected yet.</div>
+      <div id="results" class="findings" tabindex="-1"></div>
+    </section>
+
+    <section class="boundaries" aria-labelledby="boundaries-title">
+      <p class="eyebrow">03 · Know the boundary</p>
+      <h2 id="boundaries-title">What still needs a human</h2>
+      <div class="boundary-grid">
+        <article><span>Identity</span><h3>Ownership & access</h3><p>Confirm the submitting organization, developer verification, permissions, and public domains in the actual portal.</p></article>
+        <article><span>Behavior</span><h3>Live tool testing</h3><p>Exercise positive and negative flows from a clean client. Static inspection cannot observe runtime data handling.</p></article>
+        <article><span>Evidence</span><h3>Submission packet</h3><p>Prepare accurate release notes, walkthrough video, listing copy, and reviewer access without placing credentials in the package.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <footer><span>Plugin Package Inspector</span><span>Offline evidence, not a certification.</span></footer>
+  <script type="module" src="./src/app.mjs"></script>
+</body>
+</html>

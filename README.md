@@ -1,0 +1,53 @@
+# Plugin Package Inspector
+
+Plugin Package Inspector is a local-first preflight app for agent plugin packages. It checks package shape and release evidence without uploading files or asking for credentials.
+
+It is intentionally an evidence aid, not a certification and not a substitute for current platform review. Rules are bounded and explain their limits.
+
+## What it checks
+
+- root `plugin.json` and core metadata
+- portable `skills/<name>/SKILL.md` paths
+- optional MCP transport declaration
+- privacy, security, support, and license files
+- common secret signatures without including matched values in reports
+- custom credential language needing manual review
+- five-positive / three-negative review-case evidence for MCP app review (not skills-only packages)
+- explicit manual gates: identity, organization ownership, video, release notes, reviewer access, domain and live-tool verification
+
+## Use the browser app
+
+```sh
+npm run serve
+```
+
+Open `http://127.0.0.1:4173`, extract the candidate ZIP, and choose its folder. The app reads selected files in the browser only. It makes no network requests.
+
+## Use the CLI
+
+```sh
+node src/cli.mjs /path/to/extracted-plugin
+node src/cli.mjs /path/to/extracted-plugin --json
+```
+
+Exit codes: `0` means no automated blocker, `1` means blocker(s), and `2` means inspection could not run. Warnings still require manual review.
+
+## Verify
+
+```sh
+npm run check
+```
+
+No install step or third-party runtime dependency is required. This repository is a private npm package (`private: true`) and is not allocated or published as a new npm module.
+
+## Project documents
+
+- [Privacy](PRIVACY.md)
+- [Security policy](SECURITY.md)
+- [Threat model](docs/THREAT_MODEL.md)
+- [Research and scope](docs/RESEARCH.md)
+- [Release verification](docs/RELEASE_VERIFICATION.md)
+
+## License
+
+MIT
