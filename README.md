@@ -17,6 +17,10 @@ It is intentionally an evidence aid, not a certification and not a substitute fo
 
 ## Use the browser app
 
+Public demo: https://huzaifa-asif.github.io/plugin-package-inspector/
+
+The hosted page processes selected package files locally in your browser. GitHub Pages handles delivery of the static app and logs visitor IP addresses for security as described in [Privacy](PRIVACY.md).
+
 ```sh
 npm run serve
 ```

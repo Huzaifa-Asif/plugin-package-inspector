@@ -7,6 +7,7 @@
 - Add a restrictive page-level Content Security Policy and no-referrer policy for static hosting.
 - Disclose GitHub Pages security logging while preserving the local-only package-data boundary.
 - Record complete Chromium QA for folder processing, export, clear/recovery, theme persistence, mobile layout, keyboard focus, and reduced motion.
+- Publish and verify the personal GitHub Pages demo, including production MIME, CSP, subpath, network-boundary, and full browser-flow checks.
 
 ## 0.1.0 — 2026-10-16
 
