@@ -1,6 +1,6 @@
 # Release verification
 
-Status: implementation GO; source publication ready. Hosted release remains blocked until the remaining browser journeys are recorded.
+Status: implementation and pre-deployment QA GO. Hosted release is eligible once this evidence update is committed and exact-commit CI passes.
 
 Required evidence:
 
@@ -10,6 +10,6 @@ Required evidence:
 - Local HTTP verification: index and allowlisted modules returned 200 with CSP and `nosniff`; `/package.json` and a hostile Host header returned 404.
 - Accessibility implementation: semantic headings and landmarks, labeled folder input, live status, visible `:focus-within`, responsive single-column breakpoint, persistent light/dark toggle, and reduced-motion CSS are present. The theme control now exposes its next action without a contradictory pressed state.
 - Independent review: final GO after four adversarial rounds. Fixes included complete portable field validation, credential-safe findings, aggregate memory bounds, server route/Host hardening, MCP-only evidence scope, and keyboard focus treatment.
-- Browser QA evidence: a new dedicated connected-Chromium tab loaded the loopback app. Desktop light and dark rendering and the theme transition were directly observed. The first valid-folder selection attempt ended with the browser tool error `Transport closed`; it was not retried. Folder processing, export, clear/recovery, mobile layout, keyboard completion, and reduced-motion behavior therefore remain unclaimed.
-- Source publication gate: record a signed commit, public personal repository head, and successful exact-commit CI.
-- Deployment gate: complete the browser QA above and separately confirm eligible free personal hosting. No hosted deployment is claimed.
+- Browser QA evidence: a dedicated connected-Chromium tab directly confirmed desktop light/dark rendering and the theme transition. A separate isolated official Playwright Chromium run then passed all four controlled journeys: valid-folder processing and JSON export; clear, invalid-folder, and recovery behavior; keyboard focus and persisted theme state; mobile single-column layout without horizontal overflow; and reduced-motion behavior. The automated run completed 4/4 tests on 2026-10-18 MYT. Chromium is covered; Firefox, WebKit, and a screen-reader session are not claimed.
+- Source publication baseline: signed commit `b375e852e01bc2019026e806a6aee968e655f5e2` was verified with the existing Huzaifa Asif Git key, was the exact public `main` head, and passed GitHub Actions on Node 20, 22, and 24. The deployment commit must likewise be signed, pushed, and pass exact-commit CI.
+- Hosting eligibility: the repository API confirms `Huzaifa-Asif/plugin-package-inspector` is personal and public. GitHub's current documentation includes Pages for public repositories on GitHub Free and supports static HTML/CSS/JavaScript project sites. This non-commercial, dependency-free static utility fits that boundary. No hosted deployment is claimed until post-deployment verification is complete.

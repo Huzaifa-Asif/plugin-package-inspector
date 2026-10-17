@@ -4,7 +4,9 @@
 
 - Make the theme toggle expose a single, accurate next-action label instead of a contradictory pressed state.
 - Add a regression test for the theme control's accessible semantics.
-- Record partial connected-Chromium QA: desktop light and dark rendering passed; the folder-selection journey remains unverified after the browser transport closed.
+- Add a restrictive page-level Content Security Policy and no-referrer policy for static hosting.
+- Disclose GitHub Pages security logging while preserving the local-only package-data boundary.
+- Record complete Chromium QA for folder processing, export, clear/recovery, theme persistence, mobile layout, keyboard focus, and reduced motion.
 
 ## 0.1.0 — 2026-10-16
 

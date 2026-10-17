@@ -9,13 +9,13 @@
 
 ## Trust boundaries
 
-The browser receives only files selected through the browser picker or drag-and-drop. It has no backend. The CLI receives one explicit directory, skips symbolic links, bounds file count and scan size, and never executes candidate content.
+The browser receives only files selected through the browser folder picker. It has no backend. The CLI receives one explicit directory, skips symbolic links, bounds file count and scan size, and never executes candidate content.
 
 ## Material threats and controls
 
 | Threat | Control | Residual risk |
 | --- | --- | --- |
-| Private package exfiltration | No fetch, form submission, analytics, remote fonts, service worker, or backend | A modified or third-party-hosted build could add network behavior; verify source and CSP |
+| Private package exfiltration | No fetch, form submission, analytics, remote fonts, service worker, or backend; both the page and loopback server apply a restrictive CSP | A modified or third-party-hosted build could add network behavior; verify source and the delivered page |
 | Secret disclosure in reports | Findings include detector type and path only | Filenames can still be sensitive; redact exported reports before sharing |
 | Resource exhaustion | 2,000-file and 1 MB-per-file scan limits | Directory selection still exposes metadata for selected files to the page |
 | Path escape in CLI | Resolve beneath supplied root and skip symbolic links | Concurrent filesystem mutation is outside this small tool's guarantees |
