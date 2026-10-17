@@ -115,8 +115,9 @@ function exportReport() {
 
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
-  themeButton.setAttribute("aria-pressed", String(theme === "light"));
-  themeButton.querySelector("span").textContent = theme === "light" ? "Dark" : "Light";
+  const nextTheme = theme === "light" ? "dark" : "light";
+  themeButton.setAttribute("aria-label", `Switch to ${nextTheme} theme`);
+  themeButton.querySelector("span").textContent = `${nextTheme[0].toUpperCase()}${nextTheme.slice(1)}`;
   try { localStorage.setItem("ppi-theme", theme); } catch {}
 }
 

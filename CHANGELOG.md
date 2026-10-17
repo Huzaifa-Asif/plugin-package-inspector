@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Make the theme toggle expose a single, accurate next-action label instead of a contradictory pressed state.
+- Add a regression test for the theme control's accessible semantics.
+- Record partial connected-Chromium QA: desktop light and dark rendering passed; the folder-selection journey remains unverified after the browser transport closed.
+
 ## 0.1.0 — 2026-10-16
 
 - Add a local-only responsive browser inspector and bounded Node CLI.
