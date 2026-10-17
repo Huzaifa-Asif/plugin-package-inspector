@@ -6,7 +6,10 @@ It is intentionally an evidence aid, not a certification and not a substitute fo
 
 ## What it checks
 
-- root `plugin.json` and core metadata
+- root `plugin.json`, portable schema fields, and required plugin name
+- effective OpenAI settings using documented inline-over-overlay replacement precedence
+- known OpenAI interface field types and separately labelled listing-readiness gaps
+- current public-submission exclusions for app declarations and lifecycle hooks
 - portable `skills/<name>/SKILL.md` paths
 - optional MCP transport declaration
 - privacy, security, support, and license files
@@ -35,6 +38,8 @@ node src/cli.mjs /path/to/extracted-plugin --json
 ```
 
 Exit codes: `0` means no automated blocker, `1` means blocker(s), and `2` means inspection could not run. Warnings still require manual review.
+
+Portable schema validity, OpenAI listing readiness, and current public-directory eligibility are intentionally separate findings. A package can be portable while still needing listing metadata or using app/hook features that are supported locally but currently excluded from public ZIP submission.
 
 ## Verify
 

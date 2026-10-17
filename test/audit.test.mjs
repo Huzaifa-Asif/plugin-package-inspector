@@ -7,7 +7,12 @@ const manifest = JSON.stringify({
   $schema: "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   name: "useful-plugin", version: "1.0.0", description: "Does useful work",
   homepage: "https://example.com", repository: "https://github.com/example/useful-plugin",
-  extensions: {"com.openai": {interface: {displayName: "Useful Plugin"}}}
+  extensions: {"com.openai": {interface: {
+    displayName: "Useful Plugin", shortDescription: "Inspect a package", longDescription: "Inspect a synthetic plugin package locally.",
+    developerName: "Example", category: "Productivity", capabilities: ["Inspect packages"],
+    websiteURL: "https://example.com", supportURL: "https://example.com/support",
+    privacyPolicyURL: "https://example.com/privacy", termsOfServiceURL: "https://example.com/terms"
+  }}}
 });
 const reviewCases = "## Positive cases\n1. First\n2. Second\n3. Third\n4. Fourth\n5. Fifth\n\n## Negative cases\n1. First\n2. Second\n3. Third\n";
 const valid = [
@@ -118,6 +123,77 @@ test("custom credential language is a warning, not a fabricated rejection", () =
   const custom = JSON.stringify({...JSON.parse(manifest), auth: {type: "api_key"}});
   const report = auditPackage(valid.map((entry) => entry.path === "plugin.json" ? file("plugin.json", custom) : entry));
   assert.equal(report.findings.find((item) => item.id === "auth-shape").status, "warn");
+});
+
+test("inline OpenAI settings replace rather than merge the compatibility overlay", () => {
+  const root = {...JSON.parse(manifest), extensions: {"com.openai": {interface: {displayName: "Inline only"}}}};
+  const overlay = {
+    interface: {
+      displayName: "Overlay", shortDescription: "Complete overlay", longDescription: "This must not fill inline gaps.",
+      developerName: "Example", category: "Productivity", websiteURL: "https://example.com",
+      supportURL: "https://example.com/support", privacyPolicyURL: "https://example.com/privacy",
+      termsOfServiceURL: "https://example.com/terms"
+    },
+    extensions: {"com.openai": {publication: {countries: ["US"]}}}
+  };
+  const packageFiles = valid.map((entry) => entry.path === "plugin.json" ? file(entry.path, JSON.stringify(root)) : entry);
+  const report = auditPackage([...packageFiles, file(".codex-plugin/plugin.json", JSON.stringify(overlay))]);
+  const source = report.findings.find((item) => item.id === "openai-settings-source");
+  assert.equal(source.status, "pass");
+  assert.deepEqual(source.paths, ["plugin.json"]);
+  assert.match(source.detail, /not merged/i);
+  assert.equal(report.findings.find((item) => item.id === "openai-submission-metadata").status, "pass");
+  assert.equal(report.findings.find((item) => item.id === "openai-submission-readiness").status, "warn");
+});
+
+test("compatibility overlay supplies effective settings and exposes submission exclusions", () => {
+  const root = JSON.parse(manifest);
+  delete root.extensions;
+  const overlay = {
+    interface: {
+      displayName: "Useful Plugin", shortDescription: "Inspect a package", longDescription: "Inspect a synthetic plugin package locally.",
+      developerName: "Example", category: "Productivity", capabilities: ["Inspect packages"],
+      websiteURL: "https://example.com", supportURL: "https://example.com/support",
+      privacyPolicyURL: "https://example.com/privacy", termsOfServiceURL: "https://example.com/terms"
+    },
+    apps: "./.app.json",
+    hooks: "./hooks/hooks.json"
+  };
+  const packageFiles = valid.map((entry) => entry.path === "plugin.json" ? file(entry.path, JSON.stringify(root)) : entry);
+  packageFiles.push(file(".codex-plugin/plugin.json", JSON.stringify(overlay)), file(".app.json", "{}"), file("hooks/hooks.json", "{}"));
+  const report = auditPackage(packageFiles);
+  const source = report.findings.find((item) => item.id === "openai-settings-source");
+  assert.deepEqual(source.paths, [".codex-plugin/plugin.json"]);
+  assert.match(source.detail, /overlay supplies/i);
+  const exclusion = report.findings.find((item) => item.id === "openai-submission-exclusions");
+  assert.equal(exclusion.status, "fail");
+  assert.deepEqual(exclusion.paths, [".codex-plugin/plugin.json", ".app.json", "hooks/hooks.json"]);
+});
+
+test("portable validity is separate from OpenAI submission metadata readiness", () => {
+  const portable = {$schema: "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json", name: "minimal-plugin", extensions: {"com.openai": {interface: {displayName: "Useful Plugin"}}}};
+  const report = auditPackage(valid.map((entry) => entry.path === "plugin.json" ? file(entry.path, JSON.stringify(portable)) : entry));
+  assert.equal(report.findings.find((item) => item.id === "manifest-core").status, "pass");
+  assert.equal(report.findings.find((item) => item.id === "manifest-types").status, "pass");
+  assert.equal(report.findings.find((item) => item.id === "openai-submission-metadata").status, "pass");
+  assert.equal(report.findings.find((item) => item.id === "openai-submission-readiness").status, "warn");
+  assert.equal(report.findings.find((item) => item.id === "openai-submission-exclusions").status, "pass");
+});
+
+test("invalid OpenAI field types warn without changing portable validity", () => {
+  const portable = {$schema: "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json", name: "typed-plugin", extensions: {"com.openai": {interface: {displayName: "Typed", websiteURL: 42, defaultPrompt: ["Valid", 7]}}}};
+  const report = auditPackage(valid.map((entry) => entry.path === "plugin.json" ? file(entry.path, JSON.stringify(portable)) : entry));
+  assert.equal(report.findings.find((item) => item.id === "manifest-core").status, "pass");
+  assert.equal(report.findings.find((item) => item.id === "manifest-types").status, "pass");
+  assert.equal(report.findings.find((item) => item.id === "openai-submission-metadata").status, "warn");
+});
+
+test("OpenAI defaultPrompt accepts a non-empty string or string array", () => {
+  for (const defaultPrompt of ["Try this plugin", ["Try this plugin"]]) {
+    const candidate = {...JSON.parse(manifest), extensions: {"com.openai": {interface: {...JSON.parse(manifest).extensions["com.openai"].interface, defaultPrompt}}}};
+    const report = auditPackage(valid.map((entry) => entry.path === "plugin.json" ? file(entry.path, JSON.stringify(candidate)) : entry));
+    assert.equal(report.findings.find((item) => item.id === "openai-submission-metadata").status, "pass");
+  }
 });
 
 test("oversized files are not scanned and are explicitly reported", () => {

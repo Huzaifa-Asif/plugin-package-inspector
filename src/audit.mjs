@@ -4,6 +4,15 @@ const MAX_TOTAL_BYTES = 16 * 1024 * 1024;
 const PLUGIN_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json";
 const MCP_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json";
 const PLUGIN_KEYS = new Set(["$schema", "name", "version", "description", "author", "homepage", "repository", "license", "keywords", "extensions"]);
+const OPENAI_INTERFACE_STRINGS = [
+  "displayName", "shortDescription", "longDescription", "developerName", "category",
+  "websiteURL", "supportURL", "privacyPolicyURL", "termsOfServiceURL", "brandColor",
+  "brandColorDark", "composerIcon", "composerIconDark", "logo", "logoDark"
+];
+const OPENAI_COMMON_LISTING_FIELDS = [
+  "displayName", "shortDescription", "longDescription", "developerName", "category",
+  "websiteURL", "supportURL", "privacyPolicyURL", "termsOfServiceURL"
+];
 const SECRET_PATTERNS = [
   {label: "OpenAI-style key", pattern: /\bsk-[A-Za-z0-9_-]{16,}\b/g},
   {label: "GitHub token", pattern: /\bgh[pousr]_[A-Za-z0-9]{20,}\b/g},
@@ -54,13 +63,16 @@ export function auditPackage(inputFiles, options = {}) {
 
   const byPath = new Map(files.map((file) => [file.path, file]));
   const manifestFile = byPath.get("plugin.json");
+  const overlayFile = byPath.get(".codex-plugin/plugin.json");
   let manifest = null;
+  let overlay = null;
   if (!manifestFile) {
     findings.push(finding("manifest-root", "fail", "Root plugin.json is missing", "Place plugin.json at the package root, not inside a nested folder."));
   } else {
     findings.push(finding("manifest-root", "pass", "Root plugin.json found", "The package has a root manifest.", ["plugin.json"]));
     manifest = parseJson(manifestFile, "plugin.json", findings);
   }
+  if (overlayFile) overlay = parseJson(overlayFile, ".codex-plugin/plugin.json", findings);
 
   if (manifest) {
     const unknownKeys = Object.keys(manifest).filter((key) => !PLUGIN_KEYS.has(key));
@@ -70,11 +82,9 @@ export function auditPackage(inputFiles, options = {}) {
     findings.push(manifest.$schema === PLUGIN_SCHEMA
       ? finding("manifest-schema", "pass", "Portable manifest schema is current", PLUGIN_SCHEMA, ["plugin.json"])
       : finding("manifest-schema", "fail", "Portable manifest schema is missing or unsupported", `Expected ${PLUGIN_SCHEMA}.`, ["plugin.json"]));
-    const required = ["name", "version", "description"];
-    const missing = required.filter((key) => !hasString(manifest[key]));
-    findings.push(missing.length
-      ? finding("manifest-core", "fail", "Core manifest metadata is incomplete", `${missing.length} required metadata ${missing.length === 1 ? "field is" : "fields are"} missing or empty.`, ["plugin.json"])
-      : finding("manifest-core", "pass", "Core manifest metadata is present", "Name, version, and description are non-empty strings.", ["plugin.json"]));
+    findings.push(!hasString(manifest.name)
+      ? finding("manifest-core", "fail", "Portable plugin name is missing or empty", "The portable schema requires a non-empty name. The $schema requirement is reported separately.", ["plugin.json"])
+      : finding("manifest-core", "pass", "Portable required metadata is present", "The required plugin name is non-empty. The $schema requirement is reported separately; version and description are optional.", ["plugin.json"]));
     if (hasString(manifest.name) && !/^(?!.*(?:--|\.\.))[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/.test(manifest.name)) {
       findings.push(finding("manifest-name", "fail", "Plugin name is not portable", "Use 1–64 lowercase letters, digits, dots, or hyphens; avoid consecutive hyphens or dots.", ["plugin.json"]));
     } else if (hasString(manifest.name) && manifest.name.length > 64) {
@@ -84,10 +94,34 @@ export function auditPackage(inputFiles, options = {}) {
     findings.push(nestedIssues
       ? finding("manifest-types", "fail", "Portable manifest field types are invalid", `${nestedIssues} schema type or nested-property ${nestedIssues === 1 ? "issue" : "issues"} detected; candidate values are omitted.`, ["plugin.json"])
       : finding("manifest-types", "pass", "Portable manifest field types are valid", "Optional author, URL, keyword, and extension fields match the portable schema.", ["plugin.json"]));
-    const openai = manifest.extensions?.["com.openai"];
-    findings.push(openai
-      ? finding("openai-extension", "pass", "OpenAI extension metadata found", "Review the interface values against the current listing and UI guidelines.", ["plugin.json"])
-      : finding("openai-extension", "warn", "OpenAI extension metadata is absent", "This can be valid outside OpenAI distribution; an OpenAI listing needs current extension metadata.", ["plugin.json"]));
+    const inlineOpenAi = isObject(manifest.extensions?.["com.openai"]) ? manifest.extensions["com.openai"] : null;
+    const overlayOpenAi = normalizeOpenAiOverlay(overlay);
+    const effectiveOpenAi = inlineOpenAi || overlayOpenAi;
+    const effectiveSource = inlineOpenAi ? "plugin.json" : overlayOpenAi ? ".codex-plugin/plugin.json" : null;
+    findings.push(effectiveSource
+      ? finding("openai-settings-source", "pass", "Effective OpenAI settings resolved", inlineOpenAi
+        ? "Using inline extensions.com.openai from plugin.json; the compatibility overlay is not merged."
+        : "Inline extensions.com.openai is absent, so the compatibility overlay supplies OpenAI-specific settings.", [effectiveSource])
+      : finding("openai-settings-source", "warn", "OpenAI-specific settings are absent", "The package can be portable without them, but an OpenAI submission needs current listing metadata."));
+    if (effectiveOpenAi) {
+      const metadataIssues = countOpenAiSubmissionMetadataTypeIssues(effectiveOpenAi);
+      const listingGaps = countOpenAiCommonListingGaps(effectiveOpenAi);
+      findings.push(metadataIssues
+        ? finding("openai-submission-metadata", "warn", "OpenAI metadata field types need review", `${metadataIssues} known interface field ${metadataIssues === 1 ? "has" : "fields have"} an unsupported value type. Portable schema validity is reported separately.`, [effectiveSource])
+        : isObject(effectiveOpenAi.interface)
+          ? finding("openai-submission-metadata", "pass", "Known OpenAI metadata field types are valid", "Fields that are present use supported value types. This structural check does not certify listing completeness or portal acceptance.", [effectiveSource])
+          : finding("openai-submission-metadata", "info", "No OpenAI interface metadata to type-check", "OpenAI-specific settings are present, but interface listing metadata is absent. Portable schema validity is reported separately.", [effectiveSource]));
+      findings.push(listingGaps
+        ? finding("openai-submission-readiness", "warn", "OpenAI listing metadata is incomplete", `${listingGaps} commonly documented listing ${listingGaps === 1 ? "field is" : "fields are"} absent. Exact portal requirements depend on plugin architecture and human review; portable validity is unaffected.`, [effectiveSource])
+        : finding("openai-submission-readiness", "info", "Common OpenAI listing metadata is present", "Portal requirements remain architecture-dependent and subject to human review; this is not an acceptance guarantee.", [effectiveSource]));
+    } else {
+      findings.push(finding("openai-submission-metadata", "info", "No OpenAI submission metadata to inspect", "Portable validity does not imply directory-submission readiness."));
+      findings.push(finding("openai-submission-readiness", "info", "OpenAI listing readiness was not assessed", "No effective OpenAI interface settings were found. Portable validity is unaffected."));
+    }
+    const exclusions = findOpenAiSubmissionExclusions(files, inlineOpenAi, overlay);
+    findings.push(exclusions.length
+      ? finding("openai-submission-exclusions", "fail", "Package is not currently eligible for public directory submission", "App references and lifecycle hooks are supported for local Codex distribution but are currently excluded from public plugin ZIP submission.", exclusions)
+      : finding("openai-submission-exclusions", "pass", "No current app or lifecycle-hook submission exclusion found", "Portable validity and submission eligibility are separate checks."));
     const urls = ["homepage", "repository"].filter((key) => hasString(manifest[key]) && !/^https:\/\//i.test(manifest[key]));
     if (urls.length) findings.push(finding("manifest-urls", "warn", "Public metadata contains non-HTTPS URLs", `Review: ${urls.join(", ")}.`, ["plugin.json"]));
   }
@@ -213,6 +247,46 @@ function validateManifestFields(manifest) {
   if (manifest.keywords !== undefined && (!Array.isArray(manifest.keywords) || manifest.keywords.some((value) => typeof value !== "string"))) issues += 1;
   if (manifest.extensions !== undefined && (!isObject(manifest.extensions) || Object.values(manifest.extensions).some((value) => !isObject(value)))) issues += 1;
   return issues;
+}
+
+function normalizeOpenAiOverlay(overlay) {
+  if (!isObject(overlay)) return null;
+  const nested = isObject(overlay.extensions?.["com.openai"]) ? overlay.extensions["com.openai"] : {};
+  const direct = {};
+  for (const key of ["interface", "apps", "hooks", "onboardingSkill"]) {
+    if (Object.hasOwn(overlay, key)) direct[key] = overlay[key];
+  }
+  const settings = {...nested, ...direct};
+  return Object.keys(settings).length ? settings : null;
+}
+
+function countOpenAiSubmissionMetadataTypeIssues(settings) {
+  if (!isObject(settings.interface)) return settings.interface === undefined ? 0 : 1;
+  let issues = OPENAI_INTERFACE_STRINGS.filter((key) => settings.interface[key] !== undefined && !hasString(settings.interface[key])).length;
+  if (settings.interface.capabilities !== undefined && (!Array.isArray(settings.interface.capabilities) || settings.interface.capabilities.some((value) => !hasString(value)))) issues += 1;
+  if (settings.interface.defaultPrompt !== undefined && !hasString(settings.interface.defaultPrompt)
+    && (!Array.isArray(settings.interface.defaultPrompt) || settings.interface.defaultPrompt.some((value) => !hasString(value)))) issues += 1;
+  return issues;
+}
+
+function countOpenAiCommonListingGaps(settings) {
+  if (!isObject(settings.interface)) return OPENAI_COMMON_LISTING_FIELDS.length;
+  return OPENAI_COMMON_LISTING_FIELDS.filter((key) => !hasString(settings.interface[key])).length;
+}
+
+function findOpenAiSubmissionExclusions(files, inlineOpenAi, overlay) {
+  const paths = new Set();
+  if (hasSubmissionExcludedSetting(inlineOpenAi)) paths.add("plugin.json");
+  const overlayNested = isObject(overlay?.extensions?.["com.openai"]) ? overlay.extensions["com.openai"] : null;
+  if (hasSubmissionExcludedSetting(overlay) || hasSubmissionExcludedSetting(overlayNested)) paths.add(".codex-plugin/plugin.json");
+  for (const file of files) {
+    if (file.path.endsWith(".app.json") || file.path.startsWith("hooks/")) paths.add(file.path);
+  }
+  return [...paths];
+}
+
+function hasSubmissionExcludedSetting(settings) {
+  return isObject(settings) && (Object.hasOwn(settings, "apps") || Object.hasOwn(settings, "hooks"));
 }
 
 function isObject(value) {

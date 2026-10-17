@@ -1,15 +1,17 @@
 # Release verification
 
-Status: implementation, source, and hosted release GO.
+Status: correction implemented locally; source and hosted release await exact-commit re-verification.
 
 Required evidence:
 
-- `npm run check`: 22/22 tests passed on 2026-10-17 MYT, including the theme-control accessibility regression test.
+- `npm run check`: 27/27 tests passed on 2026-10-18 MYT, including minimal portable-manifest, OpenAI precedence, submission-exclusion, metadata-type, listing-readiness, and theme-control regressions.
 - CLI: the valid synthetic fixture returned `preflight-clear`; missing/invalid manifest, MCP, skill metadata, secret, size, and server-boundary probes returned bounded findings.
 - Real package check: AI Usage Lens `dist-plugin` (25 files) returned 13 passes, zero warnings, zero blockers, and three informational/manual gates.
 - Local HTTP verification: index and allowlisted modules returned 200 with CSP and `nosniff`; `/package.json` and a hostile Host header returned 404.
 - Accessibility implementation: semantic headings and landmarks, labeled folder input, live status, visible `:focus-within`, responsive single-column breakpoint, persistent light/dark toggle, and reduced-motion CSS are present. The theme control now exposes its next action without a contradictory pressed state.
-- Independent review: final GO after four adversarial rounds. Fixes included complete portable field validation, credential-safe findings, aggregate memory bounds, server route/Host hardening, MCP-only evidence scope, and keyboard focus treatment.
+- Correction record: deployed commit `f000eb6052045bb1b9681fd28f0d19c25b9650b7` still had two P2 validation defects despite the earlier no-remaining-findings claim: it ignored the effective compatibility overlay/app-hook submission exclusions and conflated portable validity with OpenAI submission metadata. That claim is retracted. The correction is not release-GO until an independent re-review, exact-commit CI, redeploy, and production QA all pass.
+- Correction review: an independent reviewer returned GO with no remaining P0–P3 findings after verifying the official schema boundary, metadata/readiness split, both `defaultPrompt` forms, inverse precedence regression, overlay fallback, and app/hook exclusions. `npm run check` passed 27/27 and `npm run audit:sample` returned `preflight-clear` with zero blockers and zero review items.
+- Correction browser QA: isolated official Playwright Chromium passed 4/4 local journeys after the validator changes: processing/export/recovery, theme and keyboard behavior, mobile overflow, and reduced motion. Exact-commit CI, redeploy, and production QA remain pending.
 - Browser QA evidence: a dedicated connected-Chromium tab directly confirmed desktop light/dark rendering and the theme transition. A separate isolated official Playwright Chromium run then passed all four controlled journeys: valid-folder processing and JSON export; clear, invalid-folder, and recovery behavior; keyboard focus and persisted theme state; mobile single-column layout without horizontal overflow; and reduced-motion behavior. The automated run completed 4/4 tests on 2026-10-18 MYT. Chromium is covered; Firefox, WebKit, and a screen-reader session are not claimed.
 - Source publication baseline: signed commit `b375e852e01bc2019026e806a6aee968e655f5e2` was verified with the existing Huzaifa Asif Git key, was the exact public `main` head, and passed GitHub Actions on Node 20, 22, and 24. The deployment commit must likewise be signed, pushed, and pass exact-commit CI.
 - Hosting eligibility: the repository API confirms `Huzaifa-Asif/plugin-package-inspector` is personal and public. GitHub's current documentation includes Pages for public repositories on GitHub Free and supports static HTML/CSS/JavaScript project sites. This non-commercial, dependency-free static utility fits that boundary.

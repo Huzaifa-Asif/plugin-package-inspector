@@ -19,6 +19,10 @@ Build a narrow, original, dependency-free app that inspects an extracted directo
 
 The published Agent Plugins 1.0 MCP schema currently rejects extra server properties, while OpenAI's packaging guide documents server-level `extensions.com.openai.auth`. The inspector treats the portable schema as the deterministic file-format baseline and reports such an extension as not portable-schema-clean; publishers must reconcile this documented conflict with the current submission portal rather than receiving a false clear.
 
+The portable plugin schema requires `$schema` and `name`; `version` and `description` are optional. OpenAI-specific settings can be inline at `extensions.com.openai` or supplied by `.codex-plugin/plugin.json`, but an inline object replaces the compatibility overlay rather than merging with it. The inspector therefore reports the effective source, validates known interface field types without turning conditional listing guidance into portable-schema failures, and reports common listing gaps separately.
+
+OpenAI's current submission guidance excludes packages containing app declarations (`apps` or `.app.json`) or lifecycle hooks from public ZIP submission, even though those features remain supported for local Codex distribution. The inspector reports that eligibility issue separately from portable validity and does not claim portal acceptance.
+
 ## Authoritative references
 
 - https://developers.openai.com/plugins/concepts/plugins
