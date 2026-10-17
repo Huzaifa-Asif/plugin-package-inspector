@@ -90,6 +90,13 @@ export function auditPackage(inputFiles, options = {}) {
     } else if (hasString(manifest.name) && manifest.name.length > 64) {
       findings.push(finding("manifest-name", "fail", "Plugin name is too long", "Portable names are limited to 64 characters.", ["plugin.json"]));
     }
+    if (!hasString(manifest.name)) {
+      findings.push(finding("openai-submission-name", "info", "OpenAI submission name was not assessed", "The portable plugin name is missing; portable validity is reported separately.", ["plugin.json"]));
+    } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(manifest.name)) {
+      findings.push(finding("openai-submission-name", "warn", "Plugin name needs an OpenAI submission-safe identifier", "For public submission, use only lowercase letters, numbers, and single hyphens. Portable schema validity is reported separately.", ["plugin.json"]));
+    } else {
+      findings.push(finding("openai-submission-name", "pass", "Plugin name has the OpenAI submission-safe shape", "The identifier uses lowercase letters, numbers, and single hyphens. Portal validation and human review still apply.", ["plugin.json"]));
+    }
     const nestedIssues = validateManifestFields(manifest);
     findings.push(nestedIssues
       ? finding("manifest-types", "fail", "Portable manifest field types are invalid", `${nestedIssues} schema type or nested-property ${nestedIssues === 1 ? "issue" : "issues"} detected; candidate values are omitted.`, ["plugin.json"])

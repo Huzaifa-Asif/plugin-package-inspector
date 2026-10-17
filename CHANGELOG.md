@@ -6,6 +6,7 @@
 - Separate portable manifest validity, OpenAI metadata type checks, listing-readiness guidance, and public-submission eligibility.
 - Flag app declarations and lifecycle hooks as current public ZIP submission exclusions, including overlay-only declarations.
 - Correct portable required metadata to `$schema` plus `name`; `version` and `description` remain optional.
+- Warn when a portable dotted identifier needs a lowercase alphanumeric, single-hyphen name for OpenAI submission.
 - Add regression coverage for minimal portable manifests, overlay precedence, exclusion detection, conditional listing gaps, invalid metadata types, and both supported `defaultPrompt` forms.
 - Make the theme toggle expose a single, accurate next-action label instead of a contradictory pressed state.
 - Add a regression test for the theme control's accessible semantics.

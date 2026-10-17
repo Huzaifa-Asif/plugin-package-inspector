@@ -8,6 +8,7 @@ It is intentionally an evidence aid, not a certification and not a substitute fo
 
 - root `plugin.json`, portable schema fields, and required plugin name
 - effective OpenAI settings using documented inline-over-overlay replacement precedence
+- OpenAI submission-safe package naming, separately from portable name validity
 - known OpenAI interface field types and separately labelled listing-readiness gaps
 - current public-submission exclusions for app declarations and lifecycle hooks
 - portable `skills/<name>/SKILL.md` paths

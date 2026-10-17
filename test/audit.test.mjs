@@ -180,6 +180,17 @@ test("portable validity is separate from OpenAI submission metadata readiness", 
   assert.equal(report.findings.find((item) => item.id === "openai-submission-exclusions").status, "pass");
 });
 
+test("portable dotted names warn for OpenAI submission without becoming portable failures", () => {
+  const dotted = {...JSON.parse(manifest), name: "useful.plugin"};
+  const report = auditPackage(valid.map((entry) => entry.path === "plugin.json" ? file(entry.path, JSON.stringify(dotted)) : entry));
+  assert.equal(report.findings.find((item) => item.id === "manifest-core").status, "pass");
+  assert.equal(report.findings.find((item) => item.id === "manifest-name"), undefined);
+  assert.equal(report.findings.find((item) => item.id === "manifest-types").status, "pass");
+  assert.equal(report.findings.find((item) => item.id === "openai-submission-name").status, "warn");
+  assert.equal(report.counts.fail, 0);
+  assert.equal(report.verdict, "needs-review");
+});
+
 test("invalid OpenAI field types warn without changing portable validity", () => {
   const portable = {$schema: "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json", name: "typed-plugin", extensions: {"com.openai": {interface: {displayName: "Typed", websiteURL: 42, defaultPrompt: ["Valid", 7]}}}};
   const report = auditPackage(valid.map((entry) => entry.path === "plugin.json" ? file(entry.path, JSON.stringify(portable)) : entry));
